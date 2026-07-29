@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CFS Yard Utilisation Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #16283c;
+  --navy: #1f3864;
+  --marine: #2e75b6;
+  --teal: #17a398;
+  --amber: #f2a541;
+  --signal: #d1495b;
+  --steel: #9aa5b1;
+  --bg: #eef1f5;
+  --panel: #ffffff;
+  --line: #d8dee7;
+  --muted: #5b6673;
+  --radius: 10px;
+  --shadow: 0 1px 2px rgba(22, 40, 60, 0.06), 0 4px 14px rgba(22, 40, 60, 0.05);
+  --display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --body: "Inter", "Segoe UI", Arial, sans-serif;
+  --mono: "IBM Plex Mono", Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ---------- header ---------- */
+.site-header {
+  background: var(--navy);
+  border-bottom: 4px solid var(--amber);
+  color: #fff;
+}
+.header-inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.site-header h1 {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 30px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.header-meta { margin: 4px 0 0; color: #c6d2e4; font-size: 12.5px; }
+
+.upload-button {
+  display: inline-block;
+  background: var(--amber);
+  color: #3a2a05;
+  font-weight: 600;
+  padding: 9px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+.upload-button:hover { filter: brightness(1.06); }
+.upload-button:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+
+.banner {
+  max-width: 1240px;
+  margin: 14px auto 0;
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  background: #fdf3df;
+  border: 1px solid #ecd39c;
+  color: #6b4d0c;
+  font-size: 13px;
+}
+.banner.error { background: #fbe9ec; border-color: #edb9c2; color: #7c1f2e; }
+
+/* ---------- yard strip (signature) ---------- */
+.yard-strip-card {
+  max-width: 1240px;
+  margin: 16px auto 0;
+  padding: 14px 18px 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.strip-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.strip-title {
+  font-family: var(--display);
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.strip-figures { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+.yard-strip {
+  display: flex;
+  height: 34px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: repeating-linear-gradient(135deg, #e8edf3, #e8edf3 6px, #f3f6fa 6px, #f3f6fa 12px);
+  border: 1px solid var(--line);
+}
+.yard-strip .seg { height: 100%; transition: width 0.5s ease; min-width: 0; }
+.strip-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.strip-legend .key {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  margin-right: 6px;
+  vertical-align: -1px;
+}
+
+/* ---------- layout ---------- */
+main { max-width: 1240px; margin: 0 auto; padding: 16px 20px 8px; }
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  align-items: flex-end;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 12px 16px;
+}
+.control { display: flex; flex-direction: column; gap: 4px; }
+.control label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.control select,
+.control input {
+  font: inherit;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #fff;
+  color: var(--ink);
+  min-width: 150px;
+}
+.control select:focus-visible,
+.control input:focus-visible,
+.ghost-button:focus-visible { outline: 3px solid var(--marine); outline-offset: 1px; }
+
+.ghost-button {
+  font: inherit;
+  font-weight: 600;
+  color: var(--navy);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+.ghost-button:hover { background: #f2f5f9; }
+
+.notice { margin: 12px 2px 0; color: var(--signal); font-weight: 500; }
+
+/* ---------- KPI cards ---------- */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+.kpi {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 12px 14px 10px;
+}
+.kpi .label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.kpi .value {
+  font-family: var(--display);
+  font-size: 34px;
+  font-weight: 600;
+  line-height: 1.05;
+  margin-top: 4px;
+  color: var(--navy);
+}
+.kpi.accent-red .value { color: var(--signal); }
+.kpi.accent-teal .value { color: var(--teal); }
+.kpi .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+/* ---------- charts & cards ---------- */
+.chart-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 16px;
+}
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 14px 16px 16px;
+  min-width: 0;
+}
+.span-2 { grid-column: span 2; }
+.card h2 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.card-sub { margin: 3px 0 10px; font-size: 12px; color: var(--muted); }
+.chart-box { position: relative; height: 320px; }
+
+/* ---------- tables ---------- */
+.table-wrap { overflow-x: auto; margin-top: 8px; }
+.table-wrap.tall { max-height: 420px; overflow-y: auto; }
+.data-table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+.data-table th {
+  position: sticky;
+  top: 0;
+  background: var(--navy);
+  color: #fff;
+  font-weight: 600;
+  padding: 8px 10px;
+  text-align: right;
+  white-space: nowrap;
+}
+.data-table th:first-child, .data-table td:first-child { text-align: left; }
+.data-table td {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--line);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.data-table tbody tr:nth-child(even) { background: #f6f8fb; }
+.data-table tr.total-row td { background: #e4ebf5; font-weight: 700; color: var(--navy); }
+
+.daily-card { margin-top: 14px; }
+.daily-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+
+/* ---------- footer ---------- */
+.site-footer {
+  max-width: 1240px;
+  margin: 18px auto 30px;
+  padding: 0 20px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+.site-footer code { font-family: var(--mono); background: #e6ebf2; padding: 1px 5px; border-radius: 4px; }
+
+/* ---------- responsive ---------- */
+@media (max-width: 900px) {
+  .chart-grid { grid-template-columns: 1fr; }
+  .span-2 { grid-column: span 1; }
+  .site-header h1 { font-size: 24px; }
+  .chart-box { height: 280px; }
+}
+@media (max-width: 560px) {
+  .control select, .control input { min-width: 120px; }
+  .kpi .value { font-size: 28px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+
+@media print {
+  .controls, .header-actions, .daily-card, .banner { display: none !important; }
+  body { background: #fff; }
+  .card, .yard-strip-card { box-shadow: none; }
+}
+
+.scope-note { margin: 10px 2px 0; color: var(--muted); font-size: 12.5px; }
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div>
+      <h1>CFS Yard Utilisation &amp; Availability</h1>
+      <p id="sourceMeta" class="header-meta">Loading data&hellip;</p>
+    </div>
+    <div class="header-actions">
+      <label class="upload-button" for="uploadInput">Upload Excel</label>
+      <input type="file" id="uploadInput" accept=".xlsx" hidden>
+    </div>
+  </div>
+</header>
+
+<div id="banner" class="banner" hidden></div>
+
+<section class="yard-strip-card" aria-label="Latest yard occupancy">
+  <div class="strip-head">
+    <span class="strip-title">Yard on <span id="stripDate">&ndash;</span></span>
+    <span class="strip-figures" id="stripFigures"></span>
+  </div>
+  <div class="yard-strip" id="yardStrip" role="img" aria-label="Yard occupancy by category against capacity"></div>
+  <div class="strip-legend" id="stripLegend"></div>
+</section>
+
+<main>
+  <section class="controls" aria-label="Filters">
+    <div class="control">
+      <label for="scopeSelect">Stacking band</label>
+      <select id="scopeSelect">
+        <option value="total">Total yard (670 slots)</option>
+        <option value="wh">Warehouse container stacking (221)</option>
+        <option value="yard">Yard container stacking (449)</option>
+      </select>
+    </div>
+    <div class="control">
+      <label for="monthSelect">Month</label>
+      <select id="monthSelect"><option value="all">All months</option></select>
+    </div>
+    <div class="control">
+      <label for="fromDate">From</label>
+      <input type="date" id="fromDate">
+    </div>
+    <div class="control">
+      <label for="toDate">To</label>
+      <input type="date" id="toDate">
+    </div>
+    <div class="control">
+      <label for="metricSelect">Trend metric</label>
+      <select id="metricSelect">
+        <option value="util">Utilisation %</option>
+        <option value="occ">Occupancy (TEU)</option>
+        <option value="avail">Available (TEU)</option>
+      </select>
+    </div>
+    <button id="resetFilters" class="ghost-button" type="button">Reset filters</button>
+  </section>
+
+  <p id="scopeNote" class="scope-note" hidden></p>
+  <p id="notice" class="notice" hidden></p>
+
+  <section class="kpi-grid" id="kpiGrid" aria-label="Key indicators"></section>
+
+  <section class="chart-grid">
+    <article class="card span-2">
+      <h2 id="trendTitle">Daily yard utilisation</h2>
+      <p class="card-sub">Solid line: daily value &middot; dashed amber: monthly average &middot; red dashed marker: capacity re-base</p>
+      <div class="chart-box"><canvas id="trendChart"></canvas></div>
+    </article>
+    <article class="card">
+      <h2>Monthly occupancy vs available (TEU)</h2>
+      <p class="card-sub">Averages per reporting day in each month, for the selected band</p>
+      <div class="chart-box"><canvas id="monthlyChart"></canvas></div>
+    </article>
+    <article class="card">
+      <h2>Stock by category (TEU)</h2>
+      <p class="card-sub">Stacked daily composition &middot; click a legend item to hide or show it</p>
+      <div class="chart-box"><canvas id="compChart"></canvas></div>
+    </article>
+    <article class="card">
+      <h2>Covered warehouse utilisation</h2>
+      <p class="card-sub">Cargo area used &divide; total covered warehouse area (45,000 sq ft) &mdash; separate from the stacking bands</p>
+      <div class="chart-box"><canvas id="whChart"></canvas></div>
+    </article>
+    <article class="card">
+      <h2>Month-wise averages</h2>
+      <div class="table-wrap">
+        <table class="data-table" id="monthlyTable">
+          <thead>
+            <tr><th>Month</th><th>Days</th><th>Slots</th><th>Avg capacity</th><th>Avg occupancy</th><th>Avg available</th><th>Avg util %</th><th>Avg avail %</th><th>Peak %</th><th>Lowest %</th><th>Avg WH %</th></tr>
+          </thead>
+          <tbody id="monthlyTableBody"></tbody>
+        </table>
+      </div>
+    </article>
+  </section>
+
+  <section class="card daily-card">
+    <div class="daily-head">
+      <h2>Daily records</h2>
+      <button id="toggleDaily" class="ghost-button" type="button">Show daily records</button>
+    </div>
+    <div class="table-wrap tall" id="dailyWrap" hidden>
+      <table class="data-table" id="dailyTable">
+        <thead>
+          <tr><th>Date</th><th>Slots</th><th>Capacity</th><th>Export load</th><th>Empty</th><th>Open yard</th><th>Import</th><th>Special</th><th>Occupancy</th><th>Available</th><th>Util %</th><th>WH %</th></tr>
+      </thead>
+        <tbody id="dailyTableBody"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <p>Bands (670-slot layout, effective 06 Jun 2026): warehouse container stacking = export open yard cargo, 221 slots &times; 3 = 663 TEU &middot; yard container stacking = export load (factory stuffing) + empty + import + special, 449 slots &times; 3 = 1,347 TEU.</p>
+  <p>TEU basis: 1&times;20&prime; = 1 TEU, 1&times;40&prime; = 2 TEU &middot; Utilisation = occupancy &divide; capacity of the selected band &middot; Covered warehouse % = area used &divide; total area.</p>
+  <p>Data file: <code>CFS_Yard_Data.xlsx</code> in this repository &middot; update it daily to refresh this page for everyone.</p>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script id="embeddedData" type="application/json">[{"date":"2026-04-01","ym":"2026-04","slots":850,"cap":2550,"expLoad":743,"empty":72,"openYard":0,"imp":154,"special":0,"occ":969,"avail":1581,"util":38.0,"whPct":77.78},{"date":"2026-04-02","ym":"2026-04","slots":850,"cap":2550,"expLoad":682,"empty":48,"openYard":0,"imp":104,"special":0,"occ":834,"avail":1716,"util":32.71,"whPct":66.67},{"date":"2026-04-03","ym":"2026-04","slots":850,"cap":2550,"expLoad":663,"empty":73,"openYard":0,"imp":55,"special":0,"occ":791,"avail":1759,"util":31.02,"whPct":66.67},{"date":"2026-04-04","ym":"2026-04","slots":850,"cap":2550,"expLoad":675,"empty":129,"openYard":0,"imp":126,"special":0,"occ":930,"avail":1620,"util":36.47,"whPct":66.67},{"date":"2026-04-05","ym":"2026-04","slots":850,"cap":2550,"expLoad":699,"empty":140,"openYard":0,"imp":42,"special":0,"occ":881,"avail":1669,"util":34.55,"whPct":66.67},{"date":"2026-04-06","ym":"2026-04","slots":850,"cap":2550,"expLoad":787,"empty":132,"openYard":0,"imp":35,"special":0,"occ":954,"avail":1596,"util":37.41,"whPct":66.67},{"date":"2026-04-07","ym":"2026-04","slots":850,"cap":2550,"expLoad":785,"empty":180,"openYard":0,"imp":12,"special":0,"occ":977,"avail":1573,"util":38.31,"whPct":71.11},{"date":"2026-04-08","ym":"2026-04","slots":850,"cap":2550,"expLoad":783,"empty":156,"openYard":0,"imp":82,"special":0,"occ":1021,"avail":1529,"util":40.04,"whPct":73.33},{"date":"2026-04-10","ym":"2026-04","slots":850,"cap":2550,"expLoad":577,"empty":93,"openYard":0,"imp":38,"special":0,"occ":708,"avail":1842,"util":27.76,"whPct":73.33},{"date":"2026-04-13","ym":"2026-04","slots":850,"cap":2550,"expLoad":235,"empty":106,"openYard":0,"imp":43,"special":0,"occ":384,"avail":2166,"util":15.06,"whPct":71.11},{"date":"2026-04-14","ym":"2026-04","slots":850,"cap":2550,"expLoad":219,"empty":159,"openYard":0,"imp":107,"special":0,"occ":485,"avail":2065,"util":19.02,"whPct":75.56},{"date":"2026-04-15","ym":"2026-04","slots":850,"cap":2550,"expLoad":195,"empty":136,"openYard":0,"imp":184,"special":0,"occ":515,"avail":2035,"util":20.2,"whPct":75.56},{"date":"2026-04-16","ym":"2026-04","slots":850,"cap":2550,"expLoad":230,"empty":111,"openYard":0,"imp":163,"special":0,"occ":504,"avail":2046,"util":19.76,"whPct":75.56},{"date":"2026-04-17","ym":"2026-04","slots":850,"cap":2550,"expLoad":282,"empty":138,"openYard":0,"imp":149,"special":0,"occ":569,"avail":1981,"util":22.31,"whPct":75.56},{"date":"2026-04-18","ym":"2026-04","slots":850,"cap":2550,"expLoad":356,"empty":171,"openYard":0,"imp":145,"special":0,"occ":672,"avail":1878,"util":26.35,"whPct":75.56},{"date":"2026-04-21","ym":"2026-04","slots":850,"cap":2550,"expLoad":495,"empty":364,"openYard":0,"imp":95,"special":0,"occ":954,"avail":1596,"util":37.41,"whPct":75.56},{"date":"2026-04-22","ym":"2026-04","slots":850,"cap":2550,"expLoad":628,"empty":328,"openYard":0,"imp":82,"special":0,"occ":1038,"avail":1512,"util":40.71,"whPct":75.56},{"date":"2026-04-23","ym":"2026-04","slots":850,"cap":2550,"expLoad":734,"empty":200,"openYard":0,"imp":77,"special":0,"occ":1011,"avail":1539,"util":39.65,"whPct":75.56},{"date":"2026-04-25","ym":"2026-04","slots":850,"cap":2550,"expLoad":762,"empty":178,"openYard":0,"imp":58,"special":0,"occ":998,"avail":1552,"util":39.14,"whPct":73.33},{"date":"2026-04-26","ym":"2026-04","slots":850,"cap":2550,"expLoad":515,"empty":139,"openYard":0,"imp":38,"special":0,"occ":692,"avail":1858,"util":27.14,"whPct":66.67},{"date":"2026-04-28","ym":"2026-04","slots":850,"cap":2550,"expLoad":295,"empty":87,"openYard":0,"imp":74,"special":0,"occ":456,"avail":2094,"util":17.88,"whPct":75.56},{"date":"2026-04-29","ym":"2026-04","slots":850,"cap":2550,"expLoad":310,"empty":100,"openYard":0,"imp":134,"special":0,"occ":544,"avail":2006,"util":21.33,"whPct":75.56},{"date":"2026-04-30","ym":"2026-04","slots":850,"cap":2550,"expLoad":369,"empty":101,"openYard":0,"imp":206,"special":0,"occ":676,"avail":1874,"util":26.51,"whPct":75.56},{"date":"2026-05-03","ym":"2026-05","slots":850,"cap":2550,"expLoad":353,"empty":103,"openYard":0,"imp":388,"special":0,"occ":844,"avail":1706,"util":33.1,"whPct":75.56},{"date":"2026-05-04","ym":"2026-05","slots":850,"cap":2550,"expLoad":412,"empty":137,"openYard":0,"imp":366,"special":0,"occ":915,"avail":1635,"util":35.88,"whPct":75.56},{"date":"2026-05-05","ym":"2026-05","slots":850,"cap":2550,"expLoad":425,"empty":116,"openYard":0,"imp":417,"special":0,"occ":958,"avail":1592,"util":37.57,"whPct":75.56},{"date":"2026-05-07","ym":"2026-05","slots":850,"cap":2550,"expLoad":462,"empty":141,"openYard":0,"imp":470,"special":0,"occ":1073,"avail":1477,"util":42.08,"whPct":71.11},{"date":"2026-05-08","ym":"2026-05","slots":850,"cap":2550,"expLoad":403,"empty":162,"openYard":0,"imp":457,"special":0,"occ":1022,"avail":1528,"util":40.08,"whPct":73.33},{"date":"2026-05-09","ym":"2026-05","slots":850,"cap":2550,"expLoad":508,"empty":151,"openYard":0,"imp":519,"special":0,"occ":1178,"avail":1372,"util":46.2,"whPct":75.56},{"date":"2026-05-10","ym":"2026-05","slots":850,"cap":2550,"expLoad":554,"empty":196,"openYard":0,"imp":466,"special":0,"occ":1216,"avail":1334,"util":47.69,"whPct":75.56},{"date":"2026-05-11","ym":"2026-05","slots":850,"cap":2550,"expLoad":631,"empty":209,"openYard":0,"imp":437,"special":0,"occ":1277,"avail":1273,"util":50.08,"whPct":75.56},{"date":"2026-05-12","ym":"2026-05","slots":850,"cap":2550,"expLoad":626,"empty":276,"openYard":0,"imp":382,"special":0,"occ":1284,"avail":1266,"util":50.35,"whPct":75.56},{"date":"2026-05-13","ym":"2026-05","slots":850,"cap":2550,"expLoad":733,"empty":242,"openYard":0,"imp":353,"special":0,"occ":1328,"avail":1222,"util":52.08,"whPct":75.56},{"date":"2026-05-14","ym":"2026-05","slots":850,"cap":2550,"expLoad":776,"empty":244,"openYard":0,"imp":293,"special":0,"occ":1313,"avail":1237,"util":51.49,"whPct":71.11},{"date":"2026-05-15","ym":"2026-05","slots":850,"cap":2550,"expLoad":560,"empty":290,"openYard":0,"imp":246,"special":0,"occ":1096,"avail":1454,"util":42.98,"whPct":75.56},{"date":"2026-05-16","ym":"2026-05","slots":850,"cap":2550,"expLoad":484,"empty":208,"openYard":0,"imp":187,"special":0,"occ":879,"avail":1671,"util":34.47,"whPct":75.56},{"date":"2026-05-17","ym":"2026-05","slots":850,"cap":2550,"expLoad":410,"empty":207,"openYard":0,"imp":142,"special":0,"occ":759,"avail":1791,"util":29.76,"whPct":75.56},{"date":"2026-05-19","ym":"2026-05","slots":850,"cap":2550,"expLoad":378,"empty":176,"openYard":0,"imp":114,"special":0,"occ":668,"avail":1882,"util":26.2,"whPct":66.67},{"date":"2026-05-20","ym":"2026-05","slots":850,"cap":2550,"expLoad":334,"empty":213,"openYard":0,"imp":102,"special":0,"occ":649,"avail":1901,"util":25.45,"whPct":62.22},{"date":"2026-05-21","ym":"2026-05","slots":850,"cap":2550,"expLoad":255,"empty":224,"openYard":0,"imp":50,"special":0,"occ":529,"avail":2021,"util":20.75,"whPct":66.67},{"date":"2026-05-22","ym":"2026-05","slots":850,"cap":2550,"expLoad":238,"empty":245,"openYard":0,"imp":38,"special":0,"occ":521,"avail":2029,"util":20.43,"whPct":66.67},{"date":"2026-05-25","ym":"2026-05","slots":850,"cap":2550,"expLoad":197,"empty":122,"openYard":0,"imp":248,"special":0,"occ":567,"avail":1983,"util":22.24,"whPct":62.22},{"date":"2026-05-26","ym":"2026-05","slots":850,"cap":2550,"expLoad":210,"empty":157,"openYard":0,"imp":243,"special":0,"occ":610,"avail":1940,"util":23.92,"whPct":64.44},{"date":"2026-05-27","ym":"2026-05","slots":850,"cap":2550,"expLoad":372,"empty":153,"openYard":0,"imp":648,"special":0,"occ":1173,"avail":1377,"util":46.0,"whPct":77.78},{"date":"2026-05-28","ym":"2026-05","slots":850,"cap":2550,"expLoad":423,"empty":179,"openYard":0,"imp":680,"special":0,"occ":1282,"avail":1268,"util":50.27,"whPct":77.78},{"date":"2026-05-29","ym":"2026-05","slots":850,"cap":2550,"expLoad":403,"empty":177,"openYard":0,"imp":676,"special":0,"occ":1256,"avail":1294,"util":49.25,"whPct":77.78},{"date":"2026-05-31","ym":"2026-05","slots":850,"cap":2550,"expLoad":297,"empty":105,"openYard":0,"imp":906,"special":0,"occ":1308,"avail":1242,"util":51.29,"whPct":73.33},{"date":"2026-06-01","ym":"2026-06","slots":850,"cap":2550,"expLoad":323,"empty":117,"openYard":0,"imp":877,"special":0,"occ":1317,"avail":1233,"util":51.65,"whPct":71.11},{"date":"2026-06-02","ym":"2026-06","slots":850,"cap":2550,"expLoad":466,"empty":99,"openYard":0,"imp":525,"special":0,"occ":1090,"avail":1460,"util":42.75,"whPct":77.78},{"date":"2026-06-03","ym":"2026-06","slots":850,"cap":2550,"expLoad":565,"empty":93,"openYard":0,"imp":483,"special":0,"occ":1141,"avail":1409,"util":44.75,"whPct":77.78},{"date":"2026-06-04","ym":"2026-06","slots":850,"cap":2550,"expLoad":549,"empty":105,"openYard":0,"imp":466,"special":0,"occ":1120,"avail":1430,"util":43.92,"whPct":77.78},{"date":"2026-06-05","ym":"2026-06","slots":850,"cap":2550,"expLoad":552,"empty":141,"openYard":0,"imp":299,"special":0,"occ":992,"avail":1558,"util":38.9,"whPct":77.78},{"date":"2026-06-06","ym":"2026-06","slots":670,"cap":2010,"expLoad":221,"empty":141,"openYard":80,"imp":628,"special":136,"occ":1206,"avail":804,"util":60.0,"whPct":73.33},{"date":"2026-06-08","ym":"2026-06","slots":670,"cap":2010,"expLoad":342,"empty":201,"openYard":80,"imp":511,"special":136,"occ":1270,"avail":740,"util":63.18,"whPct":73.33},{"date":"2026-06-09","ym":"2026-06","slots":670,"cap":2010,"expLoad":294,"empty":198,"openYard":110,"imp":487,"special":136,"occ":1225,"avail":785,"util":60.95,"whPct":73.33},{"date":"2026-06-10","ym":"2026-06","slots":670,"cap":2010,"expLoad":241,"empty":209,"openYard":110,"imp":449,"special":136,"occ":1145,"avail":865,"util":56.97,"whPct":73.33},{"date":"2026-06-11","ym":"2026-06","slots":670,"cap":2010,"expLoad":246,"empty":177,"openYard":114,"imp":331,"special":68,"occ":936,"avail":1074,"util":46.57,"whPct":73.33},{"date":"2026-06-12","ym":"2026-06","slots":670,"cap":2010,"expLoad":345,"empty":162,"openYard":112,"imp":313,"special":68,"occ":1000,"avail":1010,"util":49.75,"whPct":68.89},{"date":"2026-06-13","ym":"2026-06","slots":670,"cap":2010,"expLoad":357,"empty":135,"openYard":112,"imp":221,"special":68,"occ":893,"avail":1117,"util":44.43,"whPct":66.67},{"date":"2026-06-14","ym":"2026-06","slots":670,"cap":2010,"expLoad":437,"empty":114,"openYard":146,"imp":238,"special":136,"occ":1071,"avail":939,"util":53.28,"whPct":73.33},{"date":"2026-06-15","ym":"2026-06","slots":670,"cap":2010,"expLoad":460,"empty":150,"openYard":163,"imp":264,"special":136,"occ":1173,"avail":837,"util":58.36,"whPct":73.33},{"date":"2026-06-16","ym":"2026-06","slots":670,"cap":2010,"expLoad":457,"empty":191,"openYard":163,"imp":126,"special":110,"occ":1047,"avail":963,"util":52.09,"whPct":73.33},{"date":"2026-06-17","ym":"2026-06","slots":670,"cap":2010,"expLoad":321,"empty":190,"openYard":171,"imp":227,"special":88,"occ":997,"avail":1013,"util":49.6,"whPct":73.33},{"date":"2026-06-18","ym":"2026-06","slots":670,"cap":2010,"expLoad":277,"empty":113,"openYard":168,"imp":195,"special":70,"occ":823,"avail":1187,"util":40.95,"whPct":68.89},{"date":"2026-06-19","ym":"2026-06","slots":670,"cap":2010,"expLoad":278,"empty":76,"openYard":95,"imp":61,"special":30,"occ":540,"avail":1470,"util":26.87,"whPct":70.0},{"date":"2026-06-20","ym":"2026-06","slots":670,"cap":2010,"expLoad":359,"empty":82,"openYard":97,"imp":87,"special":0,"occ":625,"avail":1385,"util":31.09,"whPct":70.0},{"date":"2026-06-21","ym":"2026-06","slots":670,"cap":2010,"expLoad":427,"empty":160,"openYard":104,"imp":82,"special":0,"occ":773,"avail":1237,"util":38.46,"whPct":70.0},{"date":"2026-06-22","ym":"2026-06","slots":670,"cap":2010,"expLoad":481,"empty":220,"openYard":104,"imp":52,"special":0,"occ":857,"avail":1153,"util":42.64,"whPct":70.0},{"date":"2026-06-23","ym":"2026-06","slots":670,"cap":2010,"expLoad":350,"empty":236,"openYard":111,"imp":65,"special":0,"occ":762,"avail":1248,"util":37.91,"whPct":70.0},{"date":"2026-06-24","ym":"2026-06","slots":670,"cap":2010,"expLoad":498,"empty":178,"openYard":114,"imp":45,"special":0,"occ":835,"avail":1175,"util":41.54,"whPct":64.44},{"date":"2026-06-25","ym":"2026-06","slots":670,"cap":2010,"expLoad":431,"empty":146,"openYard":90,"imp":43,"special":0,"occ":710,"avail":1300,"util":35.32,"whPct":66.67},{"date":"2026-06-26","ym":"2026-06","slots":670,"cap":2010,"expLoad":443,"empty":132,"openYard":93,"imp":37,"special":0,"occ":705,"avail":1305,"util":35.07,"whPct":66.67},{"date":"2026-06-27","ym":"2026-06","slots":670,"cap":2010,"expLoad":536,"empty":171,"openYard":97,"imp":6,"special":0,"occ":810,"avail":1200,"util":40.3,"whPct":66.67},{"date":"2026-06-29","ym":"2026-06","slots":670,"cap":2010,"expLoad":649,"empty":104,"openYard":117,"imp":260,"special":0,"occ":1130,"avail":880,"util":56.22,"whPct":66.67},{"date":"2026-06-30","ym":"2026-06","slots":670,"cap":2010,"expLoad":584,"empty":128,"openYard":112,"imp":386,"special":0,"occ":1210,"avail":800,"util":60.2,"whPct":73.33},{"date":"2026-07-01","ym":"2026-07","slots":670,"cap":2010,"expLoad":755,"empty":116,"openYard":92,"imp":469,"special":0,"occ":1432,"avail":578,"util":71.24,"whPct":73.33},{"date":"2026-07-02","ym":"2026-07","slots":670,"cap":2010,"expLoad":604,"empty":123,"openYard":97,"imp":271,"special":0,"occ":1095,"avail":915,"util":54.48,"whPct":66.67},{"date":"2026-07-03","ym":"2026-07","slots":670,"cap":2010,"expLoad":653,"empty":107,"openYard":98,"imp":261,"special":0,"occ":1119,"avail":891,"util":55.67,"whPct":66.67},{"date":"2026-07-04","ym":"2026-07","slots":670,"cap":2010,"expLoad":664,"empty":99,"openYard":101,"imp":302,"special":0,"occ":1166,"avail":844,"util":58.01,"whPct":66.67},{"date":"2026-07-06","ym":"2026-07","slots":670,"cap":2010,"expLoad":561,"empty":143,"openYard":120,"imp":359,"special":0,"occ":1183,"avail":827,"util":58.86,"whPct":64.44},{"date":"2026-07-07","ym":"2026-07","slots":670,"cap":2010,"expLoad":516,"empty":183,"openYard":112,"imp":419,"special":0,"occ":1230,"avail":780,"util":61.19,"whPct":60.0},{"date":"2026-07-08","ym":"2026-07","slots":670,"cap":2010,"expLoad":501,"empty":135,"openYard":114,"imp":349,"special":0,"occ":1099,"avail":911,"util":54.68,"whPct":60.0},{"date":"2026-07-09","ym":"2026-07","slots":670,"cap":2010,"expLoad":434,"empty":143,"openYard":141,"imp":323,"special":0,"occ":1041,"avail":969,"util":51.79,"whPct":60.0},{"date":"2026-07-11","ym":"2026-07","slots":670,"cap":2010,"expLoad":335,"empty":71,"openYard":156,"imp":325,"special":0,"occ":887,"avail":1123,"util":44.13,"whPct":60.0},{"date":"2026-07-12","ym":"2026-07","slots":670,"cap":2010,"expLoad":425,"empty":36,"openYard":150,"imp":305,"special":0,"occ":916,"avail":1094,"util":45.57,"whPct":53.33},{"date":"2026-07-13","ym":"2026-07","slots":670,"cap":2010,"expLoad":426,"empty":64,"openYard":150,"imp":270,"special":0,"occ":910,"avail":1100,"util":45.27,"whPct":50.0},{"date":"2026-07-15","ym":"2026-07","slots":670,"cap":2010,"expLoad":409,"empty":138,"openYard":222,"imp":337,"special":0,"occ":1106,"avail":904,"util":55.02,"whPct":50.0},{"date":"2026-07-16","ym":"2026-07","slots":670,"cap":2010,"expLoad":311,"empty":130,"openYard":219,"imp":91,"special":0,"occ":751,"avail":1259,"util":37.36,"whPct":50.0},{"date":"2026-07-19","ym":"2026-07","slots":670,"cap":2010,"expLoad":347,"empty":46,"openYard":215,"imp":210,"special":0,"occ":818,"avail":1192,"util":40.7,"whPct":53.33},{"date":"2026-07-20","ym":"2026-07","slots":670,"cap":2010,"expLoad":386,"empty":65,"openYard":215,"imp":195,"special":0,"occ":861,"avail":1149,"util":42.84,"whPct":53.33},{"date":"2026-07-21","ym":"2026-07","slots":670,"cap":2010,"expLoad":411,"empty":76,"openYard":208,"imp":176,"special":0,"occ":871,"avail":1139,"util":43.33,"whPct":53.33},{"date":"2026-07-23","ym":"2026-07","slots":670,"cap":2010,"expLoad":499,"empty":162,"openYard":201,"imp":36,"special":0,"occ":898,"avail":1112,"util":44.68,"whPct":53.33},{"date":"2026-07-24","ym":"2026-07","slots":670,"cap":2010,"expLoad":495,"empty":196,"openYard":215,"imp":17,"special":0,"occ":923,"avail":1087,"util":45.92,"whPct":57.78},{"date":"2026-07-25","ym":"2026-07","slots":670,"cap":2010,"expLoad":682,"empty":177,"openYard":210,"imp":86,"special":0,"occ":1155,"avail":855,"util":57.46,"whPct":51.11},{"date":"2026-07-26","ym":"2026-07","slots":670,"cap":2010,"expLoad":646,"empty":191,"openYard":210,"imp":54,"special":0,"occ":1101,"avail":909,"util":54.78,"whPct":51.11},{"date":"2026-07-28","ym":"2026-07","slots":670,"cap":2010,"expLoad":712,"empty":152,"openYard":212,"imp":25,"special":0,"occ":1101,"avail":909,"util":54.78,"whPct":51.11}]</script>
+<script>
+"use strict";
+
+/* ================= configuration ================= */
+const DATA_URL = "CFS_Yard_Data.xlsx";
+const SHEET_NAME = "Daily Data";
+const CATS = [
+  { key: "expLoad",  label: "Export load",      color: "#2e75b6" },
+  { key: "imp",      label: "Import",           color: "#17a398" },
+  { key: "empty",    label: "Empty",            color: "#9aa5b1" },
+  { key: "openYard", label: "Export open yard", color: "#f2a541" },
+  { key: "special",  label: "Special",          color: "#d1495b" }
+];
+const NAVY = "#1f3864", LIGHT = "#c8d9ee", AMBER = "#f2a541", RED = "#d1495b", TEAL = "#17a398";
+
+const SCOPES = {
+  total: { label: "Total yard", slots: null, keys: null },
+  wh:    { label: "Warehouse container stacking", slots: 221, keys: ["openYard"] },
+  yard:  { label: "Yard container stacking", slots: 449, keys: ["expLoad", "empty", "imp", "special"] }
+};
+
+let allRows = [];
+let charts = {};
+let sourceLabel = "";
+let activeCats = CATS;
+let scopeLabel = "Total yard";
+
+/* ================= helpers ================= */
+const $ = (id) => document.getElementById(id);
+const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const fmtInt = (n) => Math.round(n).toLocaleString("en-IN");
+const fmtPct = (n) => n.toFixed(1) + "%";
+const fmtDate = (d) => `${String(d.getDate()).padStart(2, "0")} ${MON[d.getMonth()]} ${String(d.getFullYear()).slice(2)}`;
+const fmtShort = (d) => `${String(d.getDate()).padStart(2, "0")} ${MON[d.getMonth()]}`;
+const ymKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+const ymLabel = (ym) => { const [y, m] = ym.split("-"); return `${MON[+m - 1]} ${y.slice(2)}`; };
+const normKey = (s) => String(s).toLowerCase().replace(/[^a-z0-9]/g, "");
+const toNum = (v) => {
+  if (v === null || v === undefined || v === "") return 0;
+  const n = typeof v === "number" ? v : parseFloat(String(v).replace(/,/g, ""));
+  return Number.isFinite(n) ? n : 0;
+};
+
+function parseDateCell(v) {
+  if (v instanceof Date && !isNaN(v)) return new Date(v.getFullYear(), v.getMonth(), v.getDate());
+  if (typeof v === "number" && v > 20000) {
+    const d = new Date(Math.round((v - 25569) * 86400 * 1000));
+    return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+  }
+  if (typeof v === "string") {
+    const s = v.trim();
+    let m = s.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})$/);
+    if (m) {
+      let [, d, mo, y] = m.map(Number);
+      if (y < 100) y += 2000;
+      return new Date(y, mo - 1, d);
+    }
+    m = s.match(/^(\d{1,2})[ -]([A-Za-z]{3,})[ -](\d{2,4})$/);
+    if (m) {
+      const mi = MON.findIndex((x) => m[2].toLowerCase().startsWith(x.toLowerCase()));
+      let y = +m[3]; if (y < 100) y += 2000;
+      if (mi >= 0) return new Date(y, mi, +m[1]);
+    }
+  }
+  return null;
+}
+
+/* ================= data loading ================= */
+function parseWorkbook(wb, label) {
+  const ws = wb.Sheets[SHEET_NAME] || wb.Sheets[wb.SheetNames[0]];
+  if (!ws) { showBanner("The file has no readable sheet. Use the standard CFS_Yard_Data.xlsx template.", true); return false; }
+  const raw = XLSX.utils.sheet_to_json(ws, { defval: null });
+  const rows = [];
+  raw.forEach((r) => {
+    const o = {};
+    Object.keys(r).forEach((k) => { o[normKey(k)] = r[k]; });
+    const date = parseDateCell(o.date);
+    const slots = toNum(o.groundslots);
+    const tiers = toNum(o.tiers) || 3;
+    if (!date || slots <= 0) return;
+    const expLoad = toNum(o.exportload20) + 2 * toNum(o.exportload40);
+    const empty = toNum(o.empty20) + 2 * toNum(o.empty40);
+    const openYard = toNum(o.openyard20) + 2 * toNum(o.openyard40);
+    const imp = toNum(o.import20) + 2 * toNum(o.import40);
+    const special = toNum(o.specialteu);
+    const whArea = toNum(o.warehouseareasqft);
+    const whUsed = toNum(o.warehouseusedsqft);
+    const cap = slots * tiers;
+    const occ = expLoad + empty + openYard + imp + special;
+    rows.push({
+      date, ym: ymKey(date), slots, cap,
+      expLoad, empty, openYard, imp, special,
+      occ, avail: cap - occ, util: (occ / cap) * 100,
+      whPct: whArea > 0 ? (whUsed / whArea) * 100 : null
+    });
+  });
+  if (!rows.length) {
+    showBanner("No daily rows were found. Check that the sheet is named \u201CDaily Data\u201D and the column headings in row 1 are unchanged.", true);
+    return false;
+  }
+  rows.sort((a, b) => a.date - b.date);
+  const byDate = new Map();
+  rows.forEach((r) => byDate.set(r.date.getTime(), r));       // duplicates: later row wins
+  allRows = [...byDate.values()].sort((a, b) => a.date - b.date);
+  sourceLabel = label;
+  buildMonthOptions();
+  resetFilterInputs();
+  applyFilters();
+  return true;
+}
+
+async function loadRepoData() {
+  try {
+    const res = await fetch(DATA_URL, { cache: "no-store" });
+    if (!res.ok) throw new Error(String(res.status));
+    const buf = await res.arrayBuffer();
+    parseWorkbook(XLSX.read(buf, { type: "array", cellDates: true }), "repository data");
+  } catch (e) {
+    loadEmbedded();
+  }
+}
+
+$("uploadInput").addEventListener("change", (ev) => {
+  const f = ev.target.files[0];
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const ok = parseWorkbook(XLSX.read(reader.result, { type: "array", cellDates: true }), `uploaded file \u201C${f.name}\u201D`);
+      if (ok) showBanner(`Previewing ${f.name} on this device only. To publish it for everyone, upload the same file to the GitHub repository (Add file \u203A Upload files) so it replaces CFS_Yard_Data.xlsx.`, false);
+    } catch (e) {
+      showBanner("That file could not be read as an Excel workbook. Save it as .xlsx using the standard template and try again.", true);
+    }
+  };
+  reader.readAsArrayBuffer(f);
+  ev.target.value = "";
+});
+
+function showBanner(msg, isError) {
+  const b = $("banner");
+  b.textContent = msg;
+  b.classList.toggle("error", !!isError);
+  b.hidden = false;
+}
+
+/* ================= filters ================= */
+function buildMonthOptions() {
+  const sel = $("monthSelect");
+  const months = [...new Set(allRows.map((r) => r.ym))].sort();
+  sel.innerHTML = "<option value=\"all\">All months</option>" +
+    months.map((m) => `<option value="${m}">${MON[+m.split("-")[1] - 1]} ${m.split("-")[0]}</option>`).join("");
+}
+
+function resetFilterInputs() {
+  $("monthSelect").value = "all";
+  $("fromDate").value = "";
+  $("toDate").value = "";
+}
+
+function filteredRows() {
+  const m = $("monthSelect").value;
+  const from = $("fromDate").value ? new Date($("fromDate").value + "T00:00:00") : null;
+  const to = $("toDate").value ? new Date($("toDate").value + "T00:00:00") : null;
+  return allRows.filter((r) =>
+    (m === "all" || r.ym === m) && (!from || r.date >= from) && (!to || r.date <= to));
+}
+
+["scopeSelect", "monthSelect", "fromDate", "toDate", "metricSelect"].forEach((id) =>
+  $(id).addEventListener("change", applyFilters));
+$("resetFilters").addEventListener("click", () => { resetFilterInputs(); applyFilters(); });
+$("toggleDaily").addEventListener("click", () => {
+  const w = $("dailyWrap");
+  w.hidden = !w.hidden;
+  $("toggleDaily").textContent = w.hidden ? "Show daily records" : "Hide daily records";
+});
+
+/* ================= aggregation ================= */
+function monthlyAgg(rows) {
+  const map = new Map();
+  rows.forEach((r) => {
+    if (!map.has(r.ym)) map.set(r.ym, []);
+    map.get(r.ym).push(r);
+  });
+  return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([ym, rs]) => {
+    const avg = (f) => rs.reduce((s, x) => s + f(x), 0) / rs.length;
+    const wh = rs.filter((x) => x.whPct !== null);
+    const slotsMin = Math.min(...rs.map((x) => x.slots));
+    const slotsMax = Math.max(...rs.map((x) => x.slots));
+    return {
+      ym, label: ymLabel(ym), days: rs.length,
+      slots: slotsMin === slotsMax ? String(slotsMin) : `${slotsMax}\u2192${slotsMin}`,
+      avgCap: avg((x) => x.cap), avgOcc: avg((x) => x.occ), avgAvail: avg((x) => x.avail),
+      avgUtil: avg((x) => x.util), avgAvailPct: 100 - avg((x) => x.util),
+      peak: Math.max(...rs.map((x) => x.util)), low: Math.min(...rs.map((x) => x.util)),
+      avgWh: wh.length ? wh.reduce((s, x) => s + x.whPct, 0) / wh.length : null
+    };
+  });
+}
+
+/* ================= rendering ================= */
+function applyScope(rows) {
+  const scope = $("scopeSelect").value;
+  const def = SCOPES[scope] || SCOPES.total;
+  if (!def.keys) return { rows, excluded: 0, cats: CATS, label: def.label };
+  const valid = rows.filter((r) => r.cap === 2010);
+  const cats = CATS.filter((c) => def.keys.includes(c.key));
+  const out = valid.map((r) => {
+    const tiers = r.cap / r.slots;
+    const cap = def.slots * tiers;
+    const occ = def.keys.reduce((s, k) => s + r[k], 0);
+    return { ...r, slots: def.slots, cap, occ, avail: cap - occ, util: (occ / cap) * 100 };
+  });
+  return { rows: out, excluded: rows.length - valid.length, cats, label: def.label };
+}
+
+function applyFilters() {
+  const scoped = applyScope(filteredRows());
+  const rows = scoped.rows;
+  activeCats = scoped.cats;
+  scopeLabel = scoped.label;
+  const sn = $("scopeNote");
+  if (scoped.excluded > 0) {
+    sn.textContent = `${scoped.excluded} report(s) before 06 Jun 2026 are not shown in this band view \u2014 the 221/449-slot split applies to the 670-slot layout.`;
+    sn.hidden = false;
+  } else {
+    sn.hidden = true;
+  }
+  const notice = $("notice");
+  if (!rows.length) {
+    notice.textContent = "No records match the selected filters. Widen the date range or choose another month.";
+    notice.hidden = false;
+    return;
+  }
+  notice.hidden = true;
+  const first = rows[0], last = rows[rows.length - 1];
+  $("sourceMeta").textContent =
+    `${sourceLabel} \u00B7 ${rows.length} of ${allRows.length} reporting days \u00B7 ${fmtDate(first.date)} \u2013 ${fmtDate(last.date)}`;
+  renderStrip(last, scoped.label);
+  renderKpis(rows);
+  renderTrend(rows);
+  renderMonthly(rows);
+  renderComposition(rows);
+  renderWarehouse(rows);
+  renderMonthlyTable(rows);
+  renderDailyTable(rows);
+}
+
+function renderStrip(r, label) {
+  $("stripDate").textContent = fmtDate(r.date);
+  const prefix = label === "Total yard" ? "" : `${label} \u00B7 `;
+  $("stripFigures").textContent =
+    `${prefix}${fmtInt(r.occ)} / ${fmtInt(r.cap)} TEU occupied (${fmtPct(r.util)}) \u00B7 ${fmtInt(r.avail)} TEU available`;
+  const strip = $("yardStrip");
+  strip.innerHTML = "";
+  activeCats.forEach((c) => {
+    const seg = document.createElement("div");
+    seg.className = "seg";
+    seg.style.background = c.color;
+    seg.style.width = (r[c.key] / r.cap * 100) + "%";
+    seg.title = `${c.label}: ${fmtInt(r[c.key])} TEU`;
+    strip.appendChild(seg);
+  });
+  $("stripLegend").innerHTML = activeCats.map((c) =>
+    `<span><span class="key" style="background:${c.color}"></span>${c.label} ${fmtInt(r[c.key])}</span>`
+  ).join("") + `<span><span class="key" style="background:repeating-linear-gradient(135deg,#e8edf3,#e8edf3 3px,#f3f6fa 3px,#f3f6fa 6px);border:1px solid var(--line)"></span>Available ${fmtInt(r.avail)}</span>`;
+}
+
+function renderKpis(rows) {
+  const avg = (f) => rows.reduce((s, x) => s + f(x), 0) / rows.length;
+  const peak = rows.reduce((a, b) => (b.util > a.util ? b : a));
+  const low = rows.reduce((a, b) => (b.util < a.util ? b : a));
+  const wh = rows.filter((x) => x.whPct !== null);
+  const kpis = [
+    { label: "Avg yard utilisation", value: fmtPct(avg((x) => x.util)), sub: `${rows.length} reporting days`, cls: "" },
+    { label: "Peak utilisation", value: fmtPct(peak.util), sub: fmtDate(peak.date), cls: "accent-red" },
+    { label: "Lowest utilisation", value: fmtPct(low.util), sub: fmtDate(low.date), cls: "accent-teal" },
+    { label: "Avg occupancy", value: `${fmtInt(avg((x) => x.occ))} TEU`, sub: `latest ${fmtInt(rows[rows.length - 1].occ)} TEU`, cls: "" },
+    { label: "Avg available", value: `${fmtInt(avg((x) => x.avail))} TEU`, sub: `latest ${fmtInt(rows[rows.length - 1].avail)} TEU`, cls: "" },
+    { label: "Avg covered WH util.", value: wh.length ? fmtPct(wh.reduce((s, x) => s + x.whPct, 0) / wh.length) : "\u2013", sub: "of total warehouse area", cls: "" }
+  ];
+  $("kpiGrid").innerHTML = kpis.map((k) =>
+    `<div class="kpi ${k.cls}"><div class="label">${k.label}</div><div class="value">${k.value}</div><div class="sub">${k.sub}</div></div>`
+  ).join("");
+}
+
+function killChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+
+const baseOpts = () => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  interaction: { mode: "index", intersect: false },
+  plugins: {
+    legend: { labels: { font: { family: "Inter", size: 11 }, boxWidth: 14 } },
+    tooltip: { titleFont: { family: "Inter" }, bodyFont: { family: "Inter" } }
+  }
+});
+
+const capChangePlugin = {
+  id: "capChange",
+  afterDatasetsDraw(chart) {
+    const rows = chart.$rows;
+    if (!rows) return;
+    const { ctx, chartArea: { top, bottom }, scales: { x } } = chart;
+    rows.forEach((r, i) => {
+      if (i === 0 || r.cap === rows[i - 1].cap) return;
+      const px = x.getPixelForValue(i);
+      ctx.save();
+      ctx.strokeStyle = RED;
+      ctx.setLineDash([5, 4]);
+      ctx.beginPath(); ctx.moveTo(px, top); ctx.lineTo(px, bottom); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = RED;
+      ctx.font = "600 11px Inter";
+      const rightSide = i > rows.length / 2;
+      ctx.textAlign = rightSide ? "right" : "left";
+      ctx.fillText(`capacity ${fmtInt(rows[i - 1].cap)} \u2192 ${fmtInt(r.cap)} TEU`, px + (rightSide ? -6 : 6), top + 12);
+      ctx.restore();
+    });
+  }
+};
+
+function renderTrend(rows) {
+  const metric = $("metricSelect").value;
+  const cfg = {
+    util:  { title: "Daily yard utilisation", get: (r) => r.util,  fmt: fmtPct,             unit: "%" },
+    occ:   { title: "Daily occupancy (TEU)",  get: (r) => r.occ,   fmt: (v) => fmtInt(v),   unit: "TEU" },
+    avail: { title: "Daily available (TEU)",  get: (r) => r.avail, fmt: (v) => fmtInt(v),   unit: "TEU" }
+  }[metric];
+  $("trendTitle").textContent = cfg.title + (scopeLabel === "Total yard" ? "" : " \u2014 " + scopeLabel.toLowerCase());
+  const mon = monthlyAgg(rows);
+  const monMap = new Map(mon.map((m) => [m.ym, { util: m.avgUtil, occ: m.avgOcc, avail: m.avgAvail }[metric]]));
+  killChart("trend");
+  const c = new Chart($("trendChart"), {
+    type: "line",
+    data: {
+      labels: rows.map((r) => fmtShort(r.date)),
+      datasets: [
+        {
+          label: "Daily value", data: rows.map(cfg.get),
+          borderColor: NAVY, backgroundColor: "rgba(46,117,182,0.12)",
+          fill: metric === "util", pointRadius: 2, pointHoverRadius: 4, borderWidth: 2, tension: 0.15
+        },
+        {
+          label: "Monthly average", data: rows.map((r) => monMap.get(r.ym)),
+          borderColor: AMBER, borderDash: [7, 5], stepped: "middle",
+          pointRadius: 0, borderWidth: 2.5, fill: false
+        }
+      ]
+    },
+    options: {
+      ...baseOpts(),
+      scales: {
+        x: { ticks: { maxRotation: 45, autoSkip: true, maxTicksLimit: 20, font: { size: 10 } }, grid: { display: false } },
+        y: { beginAtZero: true, title: { display: true, text: cfg.unit },
+             ticks: { callback: (v) => metric === "util" ? v + "%" : fmtInt(v) } }
+      },
+      plugins: {
+        ...baseOpts().plugins,
+        tooltip: { callbacks: { label: (i) => `${i.dataset.label}: ${cfg.fmt(i.parsed.y)}` } }
+      }
+    },
+    plugins: [capChangePlugin]
+  });
+  c.$rows = rows;
+  charts.trend = c;
+}
+
+function renderMonthly(rows) {
+  const mon = monthlyAgg(rows);
+  killChart("monthly");
+  charts.monthly = new Chart($("monthlyChart"), {
+    type: "bar",
+    data: {
+      labels: mon.map((m) => m.label),
+      datasets: [
+        { label: "Avg occupancy", data: mon.map((m) => m.avgOcc), backgroundColor: NAVY, stack: "s" },
+        { label: "Avg available", data: mon.map((m) => m.avgAvail), backgroundColor: LIGHT, stack: "s" }
+      ]
+    },
+    options: {
+      ...baseOpts(),
+      scales: {
+        x: { stacked: true, grid: { display: false } },
+        y: { stacked: true, beginAtZero: true, title: { display: true, text: "TEU" }, ticks: { callback: (v) => fmtInt(v) } }
+      },
+      plugins: {
+        ...baseOpts().plugins,
+        tooltip: {
+          callbacks: {
+            label: (i) => `${i.dataset.label}: ${fmtInt(i.parsed.y)} TEU`,
+            afterBody: (items) => {
+              const m = mon[items[0].dataIndex];
+              return [`Avg utilisation: ${fmtPct(m.avgUtil)}`, `Avg capacity: ${fmtInt(m.avgCap)} TEU`];
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+function renderComposition(rows) {
+  killChart("comp");
+  charts.comp = new Chart($("compChart"), {
+    type: "line",
+    data: {
+      labels: rows.map((r) => fmtShort(r.date)),
+      datasets: activeCats.map((c) => ({
+        label: c.label, data: rows.map((r) => r[c.key]),
+        borderColor: c.color, backgroundColor: c.color + "CC",
+        fill: true, pointRadius: 0, borderWidth: 1, tension: 0.15
+      }))
+    },
+    options: {
+      ...baseOpts(),
+      scales: {
+        x: { ticks: { maxRotation: 45, autoSkip: true, maxTicksLimit: 14, font: { size: 10 } }, grid: { display: false } },
+        y: { stacked: true, beginAtZero: true, title: { display: true, text: "TEU" }, ticks: { callback: (v) => fmtInt(v) } }
+      },
+      plugins: {
+        ...baseOpts().plugins,
+        tooltip: { callbacks: { label: (i) => `${i.dataset.label}: ${fmtInt(i.parsed.y)} TEU` } }
+      }
+    }
+  });
+}
+
+function renderWarehouse(rows) {
+  const mon = monthlyAgg(rows);
+  const monMap = new Map(mon.map((m) => [m.ym, m.avgWh]));
+  killChart("wh");
+  charts.wh = new Chart($("whChart"), {
+    type: "line",
+    data: {
+      labels: rows.map((r) => fmtShort(r.date)),
+      datasets: [
+        { label: "Daily warehouse %", data: rows.map((r) => r.whPct), borderColor: TEAL,
+          backgroundColor: "rgba(23,163,152,0.12)", fill: true, pointRadius: 2, borderWidth: 2, tension: 0.15 },
+        { label: "Monthly average", data: rows.map((r) => monMap.get(r.ym)), borderColor: AMBER,
+          borderDash: [7, 5], stepped: "middle", pointRadius: 0, borderWidth: 2.5, fill: false }
+      ]
+    },
+    options: {
+      ...baseOpts(),
+      scales: {
+        x: { ticks: { maxRotation: 45, autoSkip: true, maxTicksLimit: 14, font: { size: 10 } }, grid: { display: false } },
+        y: { title: { display: true, text: "%" }, suggestedMin: 40, suggestedMax: 90, ticks: { callback: (v) => v + "%" } }
+      },
+      plugins: {
+        ...baseOpts().plugins,
+        tooltip: { callbacks: { label: (i) => `${i.dataset.label}: ${i.parsed.y === null ? "\u2013" : fmtPct(i.parsed.y)}` } }
+      }
+    }
+  });
+}
+
+function renderMonthlyTable(rows) {
+  const mon = monthlyAgg(rows);
+  const avg = (f) => rows.reduce((s, x) => s + f(x), 0) / rows.length;
+  const wh = rows.filter((x) => x.whPct !== null);
+  const body = mon.map((m) => `<tr>
+    <td>${m.label}</td><td>${m.days}</td><td>${m.slots}</td>
+    <td>${fmtInt(m.avgCap)}</td><td>${fmtInt(m.avgOcc)}</td><td>${fmtInt(m.avgAvail)}</td>
+    <td>${fmtPct(m.avgUtil)}</td><td>${fmtPct(m.avgAvailPct)}</td>
+    <td>${fmtPct(m.peak)}</td><td>${fmtPct(m.low)}</td>
+    <td>${m.avgWh === null ? "\u2013" : fmtPct(m.avgWh)}</td></tr>`).join("");
+  const total = `<tr class="total-row">
+    <td>Selected period</td><td>${rows.length}</td><td>\u2013</td>
+    <td>${fmtInt(avg((x) => x.cap))}</td><td>${fmtInt(avg((x) => x.occ))}</td><td>${fmtInt(avg((x) => x.avail))}</td>
+    <td>${fmtPct(avg((x) => x.util))}</td><td>${fmtPct(100 - avg((x) => x.util))}</td>
+    <td>${fmtPct(Math.max(...rows.map((x) => x.util)))}</td><td>${fmtPct(Math.min(...rows.map((x) => x.util)))}</td>
+    <td>${wh.length ? fmtPct(wh.reduce((s, x) => s + x.whPct, 0) / wh.length) : "\u2013"}</td></tr>`;
+  $("monthlyTableBody").innerHTML = body + total;
+}
+
+function renderDailyTable(rows) {
+  $("dailyTableBody").innerHTML = rows.map((r) => `<tr>
+    <td>${fmtDate(r.date)}</td><td>${r.slots}</td><td>${fmtInt(r.cap)}</td>
+    <td>${fmtInt(r.expLoad)}</td><td>${fmtInt(r.empty)}</td><td>${fmtInt(r.openYard)}</td>
+    <td>${fmtInt(r.imp)}</td><td>${fmtInt(r.special)}</td>
+    <td>${fmtInt(r.occ)}</td><td>${fmtInt(r.avail)}</td>
+    <td>${fmtPct(r.util)}</td><td>${r.whPct === null ? "\u2013" : fmtPct(r.whPct)}</td></tr>`).join("");
+}
+
+
+function loadEmbedded() {
+  const tag = document.getElementById("embeddedData");
+  if (!tag) {
+    $("sourceMeta").textContent = "No data loaded yet";
+    showBanner("Could not load CFS_Yard_Data.xlsx. Use Upload Excel to view your data.", true);
+    return;
+  }
+  const data = JSON.parse(tag.textContent);
+  allRows = data.map((r) => {
+    const [y, m, d] = r.date.split("-").map(Number);
+    return { ...r, date: new Date(y, m - 1, d) };
+  });
+  sourceLabel = "built-in data";
+  buildMonthOptions();
+  resetFilterInputs();
+  applyFilters();
+  showBanner("Showing the built-in data (up to 28 Jul 2026). The live GitHub Pages link always loads the latest CFS_Yard_Data.xlsx by itself \u2014 or use Upload Excel here to view a newer file.", false);
+}
+
+/* ================= start ================= */
+document.addEventListener("DOMContentLoaded", loadRepoData);
+
+</script>
+</body>
+</html>
